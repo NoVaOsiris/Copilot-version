@@ -1,10 +1,14 @@
 {
   "name": "pos-app",
   "version": "1.0.0",
+  "description": "Lightweight POS app with SQLite and mobile-optimized cashier UI",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "init-db": "node initDB.js"
+    "init-db": "node initDB.js",
+    "start": "node app.js"
+  },
+  "engines": {
+    "node": "18.x"
   },
   "dependencies": {
     "better-sqlite3": "^8.3.0",
