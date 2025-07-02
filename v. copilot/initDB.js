@@ -1,74 +1,118 @@
 // initDB.js
-const Database = require('better-sqlite3');
-const db = new Database('./data/pos.sqlite', { verbose: console.log });
-
-// Создаём папку data, если нужно
 const fs = require('fs');
-if (!fs.existsSync('./data')) fs.mkdirSync('./data');
+const path = require('path');
+const Database = require('better-sqlite3');
 
-// Таблицы
+// 1) РЈР±РµРґРёС‚СЊСЃСЏ, С‡С‚Рѕ РїР°РїРєР° data РµСЃС‚СЊ
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir);
+}
+
+// 2) РћС‚РєСЂС‹С‚СЊ (РёР»Рё СЃРѕР·РґР°С‚СЊ) Р‘Р”
+const dbPath = path.join(dataDir, 'pos.sqlite');
+const db = new Database(dbPath);
+
+// 3) Р’РєР»СЋС‡РёС‚СЊ Foreign Keys (С…РѕСЂРѕС€Р°СЏ РїСЂР°РєС‚РёРєР°)
+db.pragma('foreign_keys = ON');
+
+// 4) РЎРѕР·РґР°С‚СЊ С‚Р°Р±Р»РёС†С‹ СЃ UNIQUE-РѕРіСЂР°РЅРёС‡РµРЅРёСЏРјРё
 db.exec(`
-CREATE TABLE IF NOT EXISTS users(
-  id INTEGER PRIMARY KEY,
-  username TEXT UNIQUE,
-  password TEXT,
-  role TEXT
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  role TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS products(
-  id INTEGER PRIMARY KEY,
-  name TEXT,
-  price REAL
+CREATE TABLE IF NOT EXISTS products (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  price REAL NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS sales(
-  id INTEGER PRIMARY KEY,
-  user_id INTEGER,
-  product_id INTEGER,
-  quantity INTEGER,
-  total REAL,
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS sales (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  product_id INTEGER NOT NULL,
+  quantity INTEGER NOT NULL,
+  total REAL NOT NULL,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id) REFERENCES users(id),
+  FOREIGN KEY(product_id) REFERENCES products(id)
 );
 `);
 
-// Сеем пользователей
+// 5) РџРѕРґРіРѕС‚РѕРІРёС‚СЊ Р·Р°РїСЂРѕСЃС‹
+const insertUser = db.prepare(`
+  INSERT OR IGNORE INTO users(username, password, role)
+  VALUES (@username, @password, @role)
+`);
+
+const insertProduct = db.prepare(`
+  INSERT OR IGNORE INTO products(name, price)
+  VALUES (@name, @price)
+`);
+
+// 6) РЎРµРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
 const users = [
-    { u: 'admin', p: 'Z7mKp4Lx', r: 'admin' },
-    { u: 'mechnikova', p: 'G9fjR1sP', r: 'cashier' },
-    { u: 'klio', p: 'T2nV4bCk', r: 'cashier' },
-    { u: 'pyshka', p: 'W8mH9uEz', r: 'cashier' },
-    { u: 'obzhorka', p: 'R5tJ6dLm', r: 'cashier' },
-    { u: 'pochta', p: 'X3bN2qDe', r: 'cashier' },
-    { u: 'borodinka', p: 'K7gY4rTp', r: 'cashier' },
-    { u: 'mercury', p: 'S1dL8wRq', r: 'cashier' }
+  { username: 'admin',      password: 'Z7mKp4Lx', role: 'admin' },
+  { username: 'mechnikova', password: 'G9fjR1sP', role: 'cashier' },
+  { username: 'klio',       password: 'T2nV4bCk', role: 'cashier' },
+  { username: 'pyshka',     password: 'W8mH9uEz', role: 'cashier' },
+  { username: 'obzhorka',   password: 'R5tJ6dLm', role: 'cashier' },
+  { username: 'pochta',     password: 'X3bN2qDe', role: 'cashier' },
+  { username: 'borodinka',  password: 'K7gY4rTp', role: 'cashier' },
+  { username: 'mercury',    password: 'S1dL8wRq', role: 'cashier' }
 ];
-let insUser = db.prepare('INSERT OR IGNORE INTO users(username,password,role) VALUES(@u,@p,@r)');
-users.forEach(u => insUser.run(u));
 
-// Сеем продукты
-const products = [
-    ["Самса", 18], ["Конверт Мясо", 15], ["Конверт Творог", 15],
-    ["Конверт Капуста", 15], ["Штрудель Мясо/грибы", 16],
-    ["Пирожок печеный мясо", 8], ["Пирожок печеный творог", 8],
-    ["Пирожок печеный капуста", 8], ["Пицца", 16], ["Ежик сырный", 13],
-    ["Сосиска в тесте печеная", 11], ["Пирога", 20], ["Мини вет/сыр/зел", 6],
-    ["Мини брын/творог", 6], ["Мини мясо", 6], ["Лодочка колб/сыр", 18],
-    ["Лодочка грудка/гриб", 18], ["Синнанбон грудка/грибы", 18],
-    ["Синнабон ветчина/брынза", 18], ["Шашлык куриный", 25],
-    ["Гусарка", 16], ["Колосок сосиска/сыр", 17], ["Сэндвич", 16],
-    ["Плацинда мясо/картошка", 18], ["Плацинда брынза/творог", 18],
-    ["Плацинда капуста", 18], ["Беляш", 10],
-    ["Сосиска в тесте жареная", 10], ["Пирожки жар. капуста", 7],
-    ["Пирожки жар. картошка", 7], ["Котлета жаренная", 10],
-    ["Круассан шоколад", 15], ["Круассан кокос", 15],
-    ["Мини абрикос", 6], ["Мини клубника", 6], ["Пончик с кремом", 18],
-    ["Крендель", 11], ["Штрудель Вишня", 16], ["Штрудель Яблоко", 13],
-    ["Булочка «Маковый рай»", 16], ["Булочка школьная", 7],
-    ["Чебурек мясо", 15], ["Чебурек брынза", 15],
-    ["Осетинский пирог", 15], ["Кармашек", 15]
+console.log('Seeding usersвЂ¦');
+for (const u of users) {
+  try {
+    const info = insertUser.run(u);
+    if (info.changes) console.log(`  + added user ${u.username}`);
+  } catch (e) {
+    console.error(`  ! user ${u.username} вЂ” ${e.message}`);
+  }
+}
+
+// 7) РЎРµРµРј С‚РѕРІР°СЂС‹ (РЅР°Р·РІР°РЅРёСЏ РѕР±СЂРµР·Р°СЋС‚СЃСЏ Рё В«РїСѓСЃС‚С‹РµВ» РїСЂРѕРїСѓСЃРєР°СЋС‚СЃСЏ)
+const rawProducts = [
+  ["РЎР°РјСЃР°",18],["РљРѕРЅРІРµСЂС‚ РњСЏСЃРѕ",15],["РљРѕРЅРІРµСЂС‚ РўРІРѕСЂРѕРі",15],
+  ["РљРѕРЅРІРµСЂС‚ РљР°РїСѓСЃС‚Р°",15],["РЁС‚СЂСѓРґРµР»СЊ РњСЏСЃРѕ/РіСЂРёР±С‹",16],
+  ["РџРёСЂРѕР¶РѕРє РїРµС‡РµРЅС‹Р№ РјСЏСЃРѕ",8],["РџРёСЂРѕР¶РѕРє РїРµС‡РµРЅС‹Р№ С‚РІРѕСЂРѕРі",8],
+  ["РџРёСЂРѕР¶РѕРє РїРµС‡РµРЅС‹Р№ РєР°РїСѓСЃС‚Р°",8],["РџРёС†С†Р°",16],["Р•Р¶РёРє СЃС‹СЂРЅС‹Р№",13],
+  ["РЎРѕСЃРёСЃРєР° РІ С‚РµСЃС‚Рµ РїРµС‡РµРЅР°СЏ",11],["РџРёСЂРѕРіР°",20],["РњРёРЅРё РІРµС‚/СЃС‹СЂ/Р·РµР»",6],
+  ["РњРёРЅРё Р±СЂС‹РЅ/С‚РІРѕСЂРѕРі",6],["РњРёРЅРё РјСЏСЃРѕ",6],["Р›РѕРґРѕС‡РєР° РєРѕР»Р±/СЃС‹СЂ",18],
+  ["Р›РѕРґРѕС‡РєР° РіСЂСѓРґРєР°/РіСЂРёР±",18],["РЎРёРЅРЅР°РЅР±РѕРЅ РіСЂСѓРґРєР°/РіСЂРёР±С‹",18],
+  ["РЎРёРЅРЅР°Р±РѕРЅ РІРµС‚С‡РёРЅР°/Р±СЂС‹РЅР·Р°",18],["РЁР°С€Р»С‹Рє РєСѓСЂРёРЅС‹Р№",25],
+  ["Р“СѓСЃР°СЂРєР°",16],["РљРѕР»РѕСЃРѕРє СЃРѕСЃРёСЃРєР°/СЃС‹СЂ",17],["РЎСЌРЅРґРІРёС‡",16],
+  ["РџР»Р°С†РёРЅРґР° РјСЏСЃРѕ/РєР°СЂС‚РѕС€РєР°",18],["РџР»Р°С†РёРЅРґР° Р±СЂС‹РЅР·Р°/С‚РІРѕСЂРѕРі",18],
+  ["РџР»Р°С†РёРЅРґР° РєР°РїСѓСЃС‚Р°",18],["Р‘РµР»СЏС€",10],
+  ["РЎРѕСЃРёСЃРєР° РІ С‚РµСЃС‚Рµ Р¶Р°СЂРµРЅР°СЏ",10],["РџРёСЂРѕР¶РєРё Р¶Р°СЂ. РєР°РїСѓСЃС‚Р°",7],
+  ["РџРёСЂРѕР¶РєРё Р¶Р°СЂ. РєР°СЂС‚РѕС€РєР°",7],["РљРѕС‚Р»РµС‚Р° Р¶Р°СЂРµРЅРЅР°СЏ",10],
+  ["РљСЂСѓР°СЃСЃР°РЅ С€РѕРєРѕР»Р°Рґ",15],["РљСЂСѓР°СЃСЃР°РЅ РєРѕРєРѕСЃ",15],
+  ["РњРёРЅРё Р°Р±СЂРёРєРѕСЃ",6],["РњРёРЅРё РєР»СѓР±РЅРёРєР°",6],["РџРѕРЅС‡РёРє СЃ РєСЂРµРјРѕРј",18],
+  ["РљСЂРµРЅРґРµР»СЊ",11],["РЁС‚СЂСѓРґРµР»СЊ Р’РёС€РЅСЏ",16],["РЁС‚СЂСѓРґРµР»СЊ РЇР±Р»РѕРєРѕ",13],
+  ["Р‘СѓР»РѕС‡РєР° В«РњР°РєРѕРІС‹Р№ СЂР°Р№В»",16],["Р‘СѓР»РѕС‡РєР° С€РєРѕР»СЊРЅР°СЏ",7],
+  ["Р§РµР±СѓСЂРµРє РјСЏСЃРѕ",15],["Р§РµР±СѓСЂРµРє Р±СЂС‹РЅР·Р°",15],
+  ["РћСЃРµС‚РёРЅСЃРєРёР№ РїРёСЂРѕРі",15],["РљР°СЂРјР°С€РµРє",15]
 ];
-let insProd = db.prepare('INSERT OR IGNORE INTO products(name,price) VALUES(?,?)');
-products.forEach(p => insProd.run(p[0], p[1]));
 
-console.log('DB initialized.');
+console.log('Seeding productsвЂ¦');
+for (const [rawName, price] of rawProducts) {
+  const name = rawName.trim();
+  if (!name) {
+    console.warn('  ! skipped empty product name');
+    continue;
+  }
+  try {
+    const info = insertProduct.run({ name, price });
+    if (info.changes) console.log(`  + added product "${name}"`);
+  } catch (e) {
+    console.error(`  ! product "${name}" вЂ” ${e.message}`);
+  }
+}
+
+console.log('вњ”пёЏ  Database initialized at', dbPath);
 db.close();
