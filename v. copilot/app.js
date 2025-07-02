@@ -62,6 +62,60 @@ app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
 });
 
+// Регистрация обычной продажи
+app.post('/sale', requireRole('cashier'), (req, res) => {
+  const { product_id, quantity } = req.body;
+  const prod = db.prepare('SELECT * FROM products WHERE id = ?').get(product_id);
+  if (!prod) {
+    return res.status(400).json({ success: false, error: 'Товар не найден' });
+  }
+
+  const qty   = parseInt(quantity, 10) || 1;
+  const total = prod.price * qty;
+  const point = req.session.user.point_id;   // <–– точка из сессии
+
+  db.prepare(`
+    INSERT INTO sales(user_id,product_id,quantity,total,point_id)
+    VALUES (?,?,?,?,?)
+  `).run(req.session.user.id, prod.id, qty, total, point);
+
+  res.json({ success: true, total });
+});
+
+
+// Регистрация «обеда»
+app.post('/sale-lunch', requireRole('cashier'), (req, res) => {
+  const { lunch_id, quantity } = req.body;
+  const lunch = db.prepare('SELECT * FROM lunches WHERE id = ?').get(lunch_id);
+  if (!lunch) {
+    return res.status(400).json({ success: false, error: 'Набор не найден' });
+  }
+
+  const qty   = parseInt(quantity, 10) || 1;
+  const total = lunch.price * qty;
+  const point = req.session.user.point_id;
+
+  // Сначала сохраняем каждую позицию набора (с total = 0 — подробности)
+  const items = db
+    .prepare('SELECT product_id, quantity FROM lunch_items WHERE lunch_id = ?')
+    .all(lunch_id);
+
+  items.forEach(i => {
+    db.prepare(`
+      INSERT INTO sales(user_id,product_id,quantity,total,point_id)
+      VALUES (?,?,?,?,?)
+    `).run(req.session.user.id, i.product_id, i.quantity * qty, 0, point);
+  });
+
+  // И затем итоговую строку с общей суммой
+  db.prepare(`
+    INSERT INTO sales(user_id,product_id,quantity,total,point_id)
+    VALUES (?,?,?,?,?)
+  `).run(req.session.user.id, null, qty, total, point);
+
+  res.json({ success: true, total });
+});
+
 // POS-интерфейс кассира
 app.get('/cashier', requireRole('cashier'), (req, res) => {
   const prods = db.prepare('SELECT * FROM products').all();
