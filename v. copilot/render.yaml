@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: pos-app
+    env: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "npm run init-db && npm start"
+    autoDeploy: true
