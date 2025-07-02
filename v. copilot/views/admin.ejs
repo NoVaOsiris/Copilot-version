@@ -1,0 +1,39 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Админка</title>
+  <link href="/css/style.css" rel="stylesheet" />
+</head>
+<body>
+  <header>
+    <h1>Админ — <%= user.username %></h1>
+    <a href="/logout">Выйти</a>
+  </header>
+  <section>
+    <h2>Товары</h2>
+    <table>
+      <tr><th>ID</th><th>Название</th><th>Цена</th></tr>
+      <% prods.forEach(p=>{ %>
+        <tr><td><%=p.id%></td><td><%=p.name%></td><td><%=p.price%>р</td></tr>
+      <% }) %>
+    </table>
+  </section>
+  <section>
+    <h2>Продажи</h2>
+    <table>
+      <tr><th>Время</th><th>Кассир</th><th>Товар</th><th>Кол-во</th><th>Сумма</th></tr>
+      <% sales.forEach(s=>{ %>
+        <tr>
+          <td><%=s.timestamp%></td>
+          <td><%=s.username%></td>
+          <td><%=s.name%></td>
+          <td><%=s.quantity%></td>
+          <td><%=s.total%>р</td>
+        </tr>
+      <% }) %>
+    </table>
+  </section>
+</body>
+</html>
