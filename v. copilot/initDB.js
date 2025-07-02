@@ -1,82 +1,153 @@
 // initDB.js
-const fs = require('fs');
-const path = require('path');
+
+const fs       = require('fs');
+const path     = require('path');
 const Database = require('better-sqlite3');
 
-// 1) Убедиться, что папка data есть
+// 1) Создаём папку data, если нужно
 const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir);
-}
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
-// 2) Открыть (или создать) БД
+// 2) Открываем или создаём базу
 const dbPath = path.join(dataDir, 'pos.sqlite');
-const db = new Database(dbPath);
+const db     = new Database(dbPath);
 
-// 3) Включить Foreign Keys (хорошая практика)
+// Включаем внешние ключи
 db.pragma('foreign_keys = ON');
 
-// 4) Создать таблицы с UNIQUE-ограничениями
+// 3) Создаём таблицы
 db.exec(`
+CREATE TABLE IF NOT EXISTS points (
+  id   INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT    NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL UNIQUE,
-  password TEXT NOT NULL,
-  role TEXT NOT NULL
+  id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT    NOT NULL UNIQUE,
+  password TEXT    NOT NULL,
+  role     TEXT    NOT NULL CHECK(role IN ('admin','cashier')),
+  point_id INTEGER,
+  FOREIGN KEY(point_id) REFERENCES points(id)
 );
 
 CREATE TABLE IF NOT EXISTS products (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  price REAL NOT NULL
+  id    INTEGER PRIMARY KEY AUTOINCREMENT,
+  name  TEXT    NOT NULL UNIQUE,
+  price REAL    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS lunches (
+  id    INTEGER PRIMARY KEY AUTOINCREMENT,
+  name  TEXT    NOT NULL UNIQUE,
+  price REAL    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS lunch_items (
+  lunch_id   INTEGER NOT NULL,
+  product_id INTEGER NOT NULL,
+  quantity   INTEGER NOT NULL,
+  PRIMARY KEY (lunch_id, product_id),
+  FOREIGN KEY(lunch_id)   REFERENCES lunches(id),
+  FOREIGN KEY(product_id) REFERENCES products(id)
+);
+
+CREATE TABLE IF NOT EXISTS stock_entries (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  product_id INTEGER NOT NULL,
+  point_id   INTEGER NOT NULL,
+  type       TEXT    NOT NULL CHECK(type IN ('in','out')),
+  quantity   INTEGER NOT NULL,
+  timestamp  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(product_id) REFERENCES products(id),
+  FOREIGN KEY(point_id)   REFERENCES points(id)
+);
+
+CREATE TABLE IF NOT EXISTS movements (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  product_id  INTEGER NOT NULL,
+  from_point  INTEGER NOT NULL,
+  to_point    INTEGER NOT NULL,
+  quantity    INTEGER NOT NULL,
+  timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(product_id) REFERENCES products(id),
+  FOREIGN KEY(from_point) REFERENCES points(id),
+  FOREIGN KEY(to_point)   REFERENCES points(id)
 );
 
 CREATE TABLE IF NOT EXISTS sales (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  product_id INTEGER NOT NULL,
-  quantity INTEGER NOT NULL,
-  total REAL NOT NULL,
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(user_id) REFERENCES users(id),
-  FOREIGN KEY(product_id) REFERENCES products(id)
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL,
+  product_id  INTEGER,
+  quantity    INTEGER NOT NULL,
+  total       REAL    NOT NULL,
+  point_id    INTEGER NOT NULL,
+  timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id)    REFERENCES users(id),
+  FOREIGN KEY(product_id) REFERENCES products(id),
+  FOREIGN KEY(point_id)   REFERENCES points(id)
 );
 `);
 
-// 5) Подготовить запросы
-const insertUser = db.prepare(`
-  INSERT OR IGNORE INTO users(username, password, role)
-  VALUES (@username, @password, @role)
+// 4) Подготавливаем операторы INSERT
+const insPoint     = db.prepare(`INSERT OR IGNORE INTO points(name) VALUES(?)`);
+const getPoint     = db.prepare(`SELECT id FROM points WHERE name = ?`);
+
+const insUser      = db.prepare(`
+  INSERT OR IGNORE INTO users(username,password,role,point_id)
+  VALUES(@username,@password,@role,@point_id)
 `);
 
-const insertProduct = db.prepare(`
-  INSERT OR IGNORE INTO products(name, price)
-  VALUES (@name, @price)
+const insProd      = db.prepare(`
+  INSERT OR IGNORE INTO products(name,price)
+  VALUES(@name,@price)
 `);
+const getProdId    = db.prepare(`SELECT id FROM products WHERE name = ?`);
+
+const insLunch     = db.prepare(`INSERT OR IGNORE INTO lunches(name,price) VALUES(?,?)`);
+const getLunchId   = db.prepare(`SELECT id FROM lunches WHERE name = ?`);
+const insLunchItem = db.prepare(`
+  INSERT OR IGNORE INTO lunch_items(lunch_id,product_id,quantity)
+  VALUES(?,?,?)
+`);
+
+// 5) Сеем точки (points)
+const points = [
+  'mechnikova','klio','pyshka','obzhorka',
+  'pochta','borodinka','mercury'
+];
+console.log('Seeding points…');
+for (const name of points) {
+  const info = insPoint.run(name);
+  if (info.changes) console.log(`  + point: ${name}`);
+}
 
 // 6) Сеем пользователей
 const users = [
-  { username: 'admin',      password: 'admin', role: 'admin' },
-  { username: 'mechnikova', password: '1234', role: 'cashier' },
-  { username: 'klio',       password: '1234', role: 'cashier' },
-  { username: 'pyshka',     password: '1234', role: 'cashier' },
-  { username: 'obzhorka',   password: '1234', role: 'cashier' },
-  { username: 'pochta',     password: '1234', role: 'cashier' },
-  { username: 'borodinka',  password: '1234', role: 'cashier' },
-  { username: 'mercury',    password: '1234', role: 'cashier' }
+  { username: 'admin',      password: 'Z7mKp4Lx', role: 'admin',   point: null },
+  { username: 'mechnikova', password: 'G9fjR1sP', role: 'cashier', point: 'mechnikova' },
+  { username: 'klio',       password: 'T2nV4bCk', role: 'cashier', point: 'klio' },
+  { username: 'pyshka',     password: 'W8mH9uEz', role: 'cashier', point: 'pyshka' },
+  { username: 'obzhorka',   password: 'R5tJ6dLm', role: 'cashier', point: 'obzhorka' },
+  { username: 'pochta',     password: 'X3bN2qDe', role: 'cashier', point: 'pochta' },
+  { username: 'borodinka',  password: 'K7gY4rTp', role: 'cashier', point: 'borodinka' },
+  { username: 'mercury',    password: 'S1dL8wRq', role: 'cashier', point: 'mercury' }
 ];
-
 console.log('Seeding users…');
 for (const u of users) {
-  try {
-    const info = insertUser.run(u);
-    if (info.changes) console.log(`  + added user ${u.username}`);
-  } catch (e) {
-    console.error(`  ! user ${u.username} — ${e.message}`);
-  }
+  const pointId = u.point
+    ? getPoint.get(u.point)?.id
+    : null;
+  const info = insUser.run({
+    username: u.username,
+    password: u.password,
+    role: u.role,
+    point_id: pointId
+  });
+  if (info.changes) console.log(`  + user: ${u.username}`);
 }
 
-// 7) Сеем товары (названия обрезаются и «пустые» пропускаются)
+// 7) Сеем продукты
 const rawProducts = [
   ["Самса",18],["Конверт Мясо",15],["Конверт Творог",15],
   ["Конверт Капуста",15],["Штрудель Мясо/грибы",16],
@@ -98,19 +169,42 @@ const rawProducts = [
   ["Чебурек мясо",15],["Чебурек брынза",15],
   ["Осетинский пирог",15],["Кармашек",15]
 ];
-
 console.log('Seeding products…');
-for (const [rawName, price] of rawProducts) {
-  const name = rawName.trim();
-  if (!name) {
-    console.warn('  ! skipped empty product name');
-    continue;
+for (const [nameRaw, price] of rawProducts) {
+  const name = nameRaw.trim();
+  if (!name) continue;
+  const info = insProd.run({ name, price });
+  if (info.changes) console.log(`  + product: ${name}`);
+}
+
+// 8) Сеем «обеды» (lunches)
+const lunches = [
+  {
+    name: 'Обед №1',
+    price: 100,
+    items: [
+      { name: 'Самса', quantity: 1 },
+      { name: 'Ежик сырный', quantity: 1 }
+    ]
+  },
+  {
+    name: 'Обед №2',
+    price: 120,
+    items: [
+      { name: 'Пицца', quantity: 1 },
+      { name: 'Пончик с кремом', quantity: 1 }
+    ]
   }
-  try {
-    const info = insertProduct.run({ name, price });
-    if (info.changes) console.log(`  + added product "${name}"`);
-  } catch (e) {
-    console.error(`  ! product "${name}" — ${e.message}`);
+];
+console.log('Seeding lunches…');
+for (const l of lunches) {
+  const info = insLunch.run(l.name, l.price);
+  if (info.changes) console.log(`  + lunch: ${l.name}`);
+  const lunchId = getLunchId.get(l.name).id;
+  for (const it of l.items) {
+    const prodId = getProdId.get(it.name)?.id;
+    if (!prodId) continue;
+    insLunchItem.run(lunchId, prodId, it.quantity);
   }
 }
 
