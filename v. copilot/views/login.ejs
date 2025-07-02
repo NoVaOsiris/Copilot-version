@@ -2,19 +2,17 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <title>…</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Вход</title>
   <link href="/css/style.css" rel="stylesheet" />
 </head>
-
 <body>
   <form action="/login" method="post" class="login-form">
-    <h2>POS Âõîä</h2>
+    <h2>POS Вход</h2>
     <% if(error){ %><p class="error"><%= error %></p><% } %>
-    <input name="username" placeholder="Ëîãèí" required />
-    <input name="password" type="password" placeholder="Ïàðîëü" required />
-    <button type="submit">Âîéòè</button>
+    <input name="username" placeholder="Логин" required />
+    <input name="password" type="password" placeholder="Пароль" required />
+    <button type="submit">Войти</button>
   </form>
 </body>
 </html>
