@@ -2,35 +2,37 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Админка</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>вЂ¦</title>
   <link href="/css/style.css" rel="stylesheet" />
 </head>
+
 <body>
   <header>
-    <h1>Админ — <%= user.username %></h1>
-    <a href="/logout">Выйти</a>
+    <h1>ГЂГ¤Г¬ГЁГ­ вЂ” <%= user.username %></h1>
+    <a href="/logout">Г‚Г»Г©ГІГЁ</a>
   </header>
   <section>
-    <h2>Товары</h2>
+    <h2>Г’Г®ГўГ Г°Г»</h2>
     <table>
-      <tr><th>ID</th><th>Название</th><th>Цена</th></tr>
+      <tr><th>ID</th><th>ГЌГ Г§ГўГ Г­ГЁГҐ</th><th>Г–ГҐГ­Г </th></tr>
       <% prods.forEach(p=>{ %>
-        <tr><td><%=p.id%></td><td><%=p.name%></td><td><%=p.price%>р</td></tr>
+        <tr><td><%=p.id%></td><td><%=p.name%></td><td><%=p.price%>Г°</td></tr>
       <% }) %>
     </table>
   </section>
   <section>
-    <h2>Продажи</h2>
+    <h2>ГЏГ°Г®Г¤Г Г¦ГЁ</h2>
     <table>
-      <tr><th>Время</th><th>Кассир</th><th>Товар</th><th>Кол-во</th><th>Сумма</th></tr>
+      <tr><th>Г‚Г°ГҐГ¬Гї</th><th>ГЉГ Г±Г±ГЁГ°</th><th>Г’Г®ГўГ Г°</th><th>ГЉГ®Г«-ГўГ®</th><th>Г‘ГіГ¬Г¬Г </th></tr>
       <% sales.forEach(s=>{ %>
         <tr>
           <td><%=s.timestamp%></td>
           <td><%=s.username%></td>
           <td><%=s.name%></td>
           <td><%=s.quantity%></td>
-          <td><%=s.total%>р</td>
+          <td><%=s.total%>Г°</td>
         </tr>
       <% }) %>
     </table>
