@@ -1,0 +1,21 @@
+<%- include('partials/header', { user }) %>
+<h2>Отчёты</h2>
+<form method="get" action="/admin/reports">
+  <input type="date" name="date_from">
+  <input type="date" name="date_to">
+  <button type="submit">Фильтровать</button>
+</form>
+<a href="/admin/export.csv">Export CSV</a> |
+<a href="/admin/export.pdf">Export PDF</a>
+<table>
+  <tr><th>Кассир</th><th>Товар</th><th>Кол-во</th><th>Сумма</th><th>Время</th></tr>
+  <% rows.forEach(r=>{ %>
+    <tr>
+      <td><%= r.username %></td>
+      <td><%= r.product||'—' %></td>
+      <td><%= r.quantity %></td>
+      <td><%= r.total %>&#8381;</td>
+      <td><%= r.timestamp %></td>
+    </tr>
+  <% }) %>
+</table>
