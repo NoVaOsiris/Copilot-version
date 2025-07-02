@@ -56,14 +56,14 @@ const insertProduct = db.prepare(`
 
 // 6) Сеем пользователей
 const users = [
-  { username: 'admin',      password: 'Z7mKp4Lx', role: 'admin' },
-  { username: 'mechnikova', password: 'G9fjR1sP', role: 'cashier' },
-  { username: 'klio',       password: 'T2nV4bCk', role: 'cashier' },
-  { username: 'pyshka',     password: 'W8mH9uEz', role: 'cashier' },
-  { username: 'obzhorka',   password: 'R5tJ6dLm', role: 'cashier' },
-  { username: 'pochta',     password: 'X3bN2qDe', role: 'cashier' },
-  { username: 'borodinka',  password: 'K7gY4rTp', role: 'cashier' },
-  { username: 'mercury',    password: 'S1dL8wRq', role: 'cashier' }
+  { username: 'admin',      password: 'admin', role: 'admin' },
+  { username: 'mechnikova', password: '1234', role: 'cashier' },
+  { username: 'klio',       password: '1234', role: 'cashier' },
+  { username: 'pyshka',     password: '1234', role: 'cashier' },
+  { username: 'obzhorka',   password: '1234', role: 'cashier' },
+  { username: 'pochta',     password: '1234', role: 'cashier' },
+  { username: 'borodinka',  password: '1234', role: 'cashier' },
+  { username: 'mercury',    password: '1234', role: 'cashier' }
 ];
 
 console.log('Seeding users…');
