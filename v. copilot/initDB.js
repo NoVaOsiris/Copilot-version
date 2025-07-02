@@ -124,14 +124,14 @@ for (const name of points) {
 
 // 6) Сеем пользователей
 const users = [
-  { username: 'admin',      password: 'Z7mKp4Lx', role: 'admin',   point: null },
-  { username: 'mechnikova', password: 'G9fjR1sP', role: 'cashier', point: 'mechnikova' },
-  { username: 'klio',       password: 'T2nV4bCk', role: 'cashier', point: 'klio' },
-  { username: 'pyshka',     password: 'W8mH9uEz', role: 'cashier', point: 'pyshka' },
-  { username: 'obzhorka',   password: 'R5tJ6dLm', role: 'cashier', point: 'obzhorka' },
-  { username: 'pochta',     password: 'X3bN2qDe', role: 'cashier', point: 'pochta' },
-  { username: 'borodinka',  password: 'K7gY4rTp', role: 'cashier', point: 'borodinka' },
-  { username: 'mercury',    password: 'S1dL8wRq', role: 'cashier', point: 'mercury' }
+  { username: 'admin',      password: 'admin', role: 'admin',   point: null },
+  { username: 'mechnikova', password: '1234', role: 'cashier', point: 'mechnikova' },
+  { username: 'klio',       password: '1234', role: 'cashier', point: 'klio' },
+  { username: 'pyshka',     password: '1234', role: 'cashier', point: 'pyshka' },
+  { username: 'obzhorka',   password: '1234', role: 'cashier', point: 'obzhorka' },
+  { username: 'pochta',     password: '1234', role: 'cashier', point: 'pochta' },
+  { username: 'borodinka',  password: '1234', role: 'cashier', point: 'borodinka' },
+  { username: 'mercury',    password: '1234', role: 'cashier', point: 'mercury' }
 ];
 console.log('Seeding users…');
 for (const u of users) {
