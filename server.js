@@ -343,6 +343,24 @@ app.post('/api/inventory', requireRole(), async (req, res) => {
         client.release();
     }
 });
+app.post('/api/login', async (req, res) => {
+  const { name, password } = req.body;
+  console.log('Login attempt:', { name, password }); // 👈
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM sellers WHERE name=$1 AND password=$2',
+      [name, password]
+    );
+    const row = rows[0];
+    if (!row) return res.status(401).json({ error: 'Неверные данные' });
+    req.session.user = { id: row.id, name: row.name, role: row.role };
+    res.json(req.session.user);
+  } catch (err) {
+    console.error('Login DB error:', err); // 👈
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
 
 // Start server
 app.listen(PORT, () => {
