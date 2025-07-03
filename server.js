@@ -313,6 +313,54 @@ app.get('/api/daily-summary', requireRole('admin'), async (req, res) => {
         res.status(500).json({ error: 'DB error' });
     }
 });
+// Excel: Daily summary
+app.get('/api/daily-summary.xlsx', requireRole('admin'), async (req, res) => {
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const sql = `
+        SELECT s.name AS seller,
+               COALESCE(SUM(i.opening_balance),0)       AS start_balance,
+               COALESCE(SUM(i.receipt),0)                AS total_in,
+               COALESCE(SUM(sa.quantity),0)              AS total_out,
+               COALESCE(SUM(i.opening_balance),0) +
+               COALESCE(SUM(i.receipt),0) -
+               COALESCE(SUM(sa.quantity),0)               AS net_balance,
+               COALESCE(SUM(i.closing_balance),0)        AS end_balance
+        FROM sellers s
+        LEFT JOIN inventory i ON s.id = i.seller_id AND i.date = $1
+        LEFT JOIN sales sa ON s.id = sa.seller_id AND date(sa.sale_time) = $1
+        WHERE s.role = 'seller'
+        GROUP BY s.name
+        ORDER BY s.name`;
+
+    try {
+        const { rows } = await pool.query(sql, [date]);
+        const wb = new Excel.Workbook();
+        const ws = wb.addWorksheet('Summary');
+
+        ws.columns = [
+            { header: 'Продавец', key: 'seller', width: 20 },
+            { header: 'Нач. остаток', key: 'start_balance', width: 15 },
+            { header: 'Поступления', key: 'total_in', width: 15 },
+            { header: 'Продажи', key: 'total_out', width: 10 },
+            { header: 'Чистый остаток', key: 'net_balance', width: 15 },
+            { header: 'Кон. остаток', key: 'end_balance', width: 15 }
+        ];
+        ws.getRow(1).font = { bold: true };
+        ws.autoFilter = { from: 'A1', to: 'F1' };
+
+        rows.forEach(r => ws.addRow(r));
+
+        res.setHeader('Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition',
+            `attachment; filename="daily-summary-${date}.xlsx"`);
+
+        await wb.xlsx.write(res);
+        res.end();
+    } catch (err) {
+        res.status(500).send('DB error');
+    }
+});
 // Inventory
 app.get('/api/inventory-fill', requireRole(), async (req, res) => {
     const seller_id = req.session.user.id;
