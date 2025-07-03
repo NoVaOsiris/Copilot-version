@@ -90,13 +90,16 @@
             tbody.innerHTML = '';
             let total = 0;
             data.forEach(r => {
-                total += r.sum;
+               total += Number(r.sum) || 0;
+                const values = [];
+                if ('seller' in r) values.push(r.seller);
+                if ('product' in r) values.push(r.product);
+                if ('quantity' in r) values.push(r.quantity);
+                if ('price' in r) values.push(r.price);
+                if ('sum' in r) values.push(r.sum);
+                if ('time' in r) values.push(new Date(r.time).toLocaleString());
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-           
-              <td>${r.seller}</td><td>${r.product}</td><td>${r.quantity}</td>
-              <td>${r.price}</td><td>${r.sum}</td><td>${new Date(r.time).toLocaleString()}</td>
-            `;
+                tr.innerHTML = values.map(v => `<td>${v}</td>`).join('');
                 tbody.appendChild(tr);
             });
             document.getElementById('salesTotal').innerText = `Итого: ${total} ₽`;
