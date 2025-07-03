@@ -1,18 +1,25 @@
-{
-  "name": "pirozhki-app",
-  "version": "1.0.0",
-  "description": "Система учёта пирожков",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "body-parser": "^1.20.2",
-    "connect-sqlite3": "^0.9.16",
-    "cors": "^2.8.5",
-    "exceljs": "^4.4.0",
-    "express": "^4.18.2",
-    "express-session": "^1.18.1",
-    "sqlite3": "^5.1.6"
-  }
-}
+diff --git a/package.json b/package.json
+index d2633276281f92957849f5e44b3d17a351cb71dc..d990d70c41c364bed6cc729ed7d16e2c1875e4f0 100644
+--- a/package.json
++++ b/package.json
+@@ -1,18 +1,19 @@
+ {
+   "name": "pirozhki-app",
+   "version": "1.0.0",
+   "description": "Система учёта пирожков",
+   "main": "server.js",
+   "scripts": {
+     "start": "node server.js"
+   },
+   "dependencies": {
+     "body-parser": "^1.20.2",
+    "connect-pg-simple": "^10.0.0",
+     "cors": "^2.8.5",
+     "exceljs": "^4.4.0",
+     "express": "^4.18.2",
+     "express-session": "^1.18.1",
+   "sqlite3": "^5.1.6"
+   "pg": "^8.11.5",
+    "dotenv": "^16.3.1"
+   }
+ }
