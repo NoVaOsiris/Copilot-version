@@ -1,0 +1,70 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Продажи (админка)</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 0.5em; text-align: left; }
+    th { background: #f0f0f0; }
+    #filters { margin-bottom: 1em; }
+  </style>
+</head>
+<body>
+  <h2>Продажи — админ-панель</h2>
+  <div id="filters">
+    <label>С даты: <input type="date" id="fromDate" /></label>
+    <label>По дату: <input type="date" id="toDate" /></label>
+    <label>Продавец ID: <input id="sellerId" placeholder="Необязательно" /></label>
+    <button onclick="loadSales()">🔄 Обновить</button>
+    <button onclick="downloadExcel()">⬇️ Скачать Excel</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Продавец</th><th>Товар</th><th>Кол-во</th><th>Время</th></tr>
+    </thead>
+    <tbody id="salesBody"></tbody>
+  </table>
+
+  <script>
+    async function loadSales() {
+      const from = document.getElementById('fromDate').value;
+      const to = document.getElementById('toDate').value;
+      const seller_id = document.getElementById('sellerId').value;
+      const query = `?from=${from}&to=${to}&seller_id=${seller_id}`;
+      const res = await fetch('/api/sales' + query);
+      const data = await res.json();
+      const body = document.getElementById('salesBody');
+      body.innerHTML = '';
+      data.forEach(sale => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${sale.seller}</td>
+          <td>${sale.product}</td>
+          <td>${sale.quantity}</td>
+          <td>${sale.sale_time}</td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    async function downloadExcel() {
+      const from = document.getElementById('fromDate').value;
+      const to = document.getElementById('toDate').value;
+      const link = document.createElement('a');
+      link.href = `/api/sales/export?from=${from}&to=${to}`;
+      link.click();
+    }
+
+    setInterval(loadSales, 10000);
+    window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('fromDate').value = today;
+      document.getElementById('toDate').value = today;
+      loadSales();
+    };
+  </script>
+</body>
+</html>
