@@ -72,6 +72,13 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+const res = await fetch('/api/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'  // ← это обязательно!
+  },
+  body: JSON.stringify({ name, password }) // ← это тоже
+});
 
 
 app.get('/', (req, res) => {
