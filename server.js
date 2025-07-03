@@ -19,12 +19,16 @@ const pool = new Pool({
 
 // Middleware
 app.use(session({
-    store: new pgSession({ pool }),
+    store: new pgSession({
+        pool,
+        createTableIfMissing: true  // ⬅️ вот это добавили
+    }),
     secret: process.env.SESSION_SECRET || 'secret',
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 86400000 }
 }));
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
