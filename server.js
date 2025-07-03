@@ -152,6 +152,17 @@ app.delete('/api/products/:id', requireRole('admin'), async (req, res) => {
     }
 });
 
+// List of sellers for admin interfaces
+app.get('/api/sellers', requireRole('admin'), async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            "SELECT id, name FROM sellers WHERE role='seller' ORDER BY name"
+        );
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'DB error' });
+    }
+});
 // Sales
 app.post('/api/sales', requireRole(), async (req, res) => {
     const { items } = req.body;
@@ -200,19 +211,25 @@ app.get('/api/sales', requireRole('admin'), async (req, res) => {
 
 // Excel: Sales
 app.get('/api/sales-export.xlsx', requireRole('admin'), async (req, res) => {
-    const date = req.query.date;
+    const { date, seller_id } = req.query;
     if (!date) return res.status(400).send('Укажите дату');
-    const sql = `
+    let sql = `
     SELECT s.name AS seller, p.name AS product, sa.quantity, p.price,
            (sa.quantity * p.price) AS sum,
            sa.sale_time AT TIME ZONE 'UTC' AT TIME ZONE 'localtime' AS time
     FROM sales sa
     JOIN sellers s ON s.id = sa.seller_id
     JOIN products p ON p.id = sa.product_id
-    WHERE date(sa.sale_time) = $1
-    ORDER BY sa.sale_time`;
+   WHERE date(sa.sale_time) = $1`;
+    const params = [date];
+    if (seller_id) {
+        sql += ' AND sa.seller_id = $2';
+        params.push(seller_id);
+    }
+    sql += ' ORDER BY sa.sale_time';
+
     try {
-        const { rows } = await pool.query(sql, [date]);
+       const { rows } = await pool.query(sql, params);
         const wb = new Excel.Workbook();
         const ws = wb.addWorksheet('Sales');
         ws.columns = [
