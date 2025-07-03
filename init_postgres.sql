@@ -6,6 +6,15 @@ CREATE TABLE IF NOT EXISTS sellers (
     password TEXT NOT NULL,
     role TEXT NOT NULL
 );
+INSERT INTO sellers (name, password, role) VALUES
+('admin', '1234', 'admin'),
+('клио', '1234', 'seller'),
+('обжорка', '1234', 'seller'),
+('пышка', '1234', 'seller'),
+('мечникова', '1234', 'seller'),
+('бородинка', '1234', 'seller'),
+('меркурий', '1234', 'seller'),
+('почта', '1234', 'seller');
 
 -- products: товары
 CREATE TABLE IF NOT EXISTS products (
