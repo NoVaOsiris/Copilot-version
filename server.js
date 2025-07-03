@@ -52,6 +52,26 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+app.post('/api/login', async (req, res) => {
+  const { name, password } = req.body;
+  console.log("Попытка входа:", name, password); // 👈 лог
+
+  try {
+    const result = await pool.query(
+      'SELECT * FROM sellers WHERE name = $1 AND password = $2',
+      [name, password]
+    );
+    const user = result.rows[0];
+    if (!user) {
+      return res.status(401).json({ error: 'Неверное имя или пароль' });
+    }
+    req.session.user = { id: user.id, name: user.name, role: user.role };
+    res.json({ name: user.name, role: user.role });
+  } catch (err) {
+    console.error("Ошибка в /api/login:", err); // 👈 лог ошибки
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
 
 
 app.get('/', (req, res) => {
