@@ -47,6 +47,11 @@
 
     <h3>💰 Продажи</h3>
     <label>Дата: <input type="date" id="salesDate" /></label>
+   <label>Продавец:
+        <select id="sellerSelect">
+            <option value="">Все</option>
+        </select>
+    </label>
     <button id="loadSales">Загрузить</button>
     <button id="exportSales">Скачать Excel</button>
     <table>
@@ -66,6 +71,19 @@
         }
         document.getElementById('adminInfo').innerText = `Вы вошли как: ${admin.name}`;
 
+        // Загрузка списка продавцов
+        async function loadSellers() {
+            const res = await fetch('/api/sellers', { credentials: 'include' });
+            const sellers = await res.json();
+            const select = document.getElementById('sellerSelect');
+            sellers.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                select.appendChild(opt);
+            });
+        }
+
         // Загрузка товаров
         async function loadProducts() {
             const res = await fetch('/api/products', { credentials: 'include' });
@@ -83,23 +101,23 @@
         // Загрузка продаж
         document.getElementById('loadSales').onclick = async () => {
             const date = document.getElementById('salesDate').value;
+            const seller = document.getElementById('sellerSelect').value;
             if (!date) return alert('Укажите дату!');
-            const res = await fetch('/api/sales?date=' + date, { credentials: 'include' });
+            let url = '/api/sales?date=' + date;
+            if (seller) url += '&seller_id=' + seller;
+            const res = await fetch(url, { credentials: 'include' });
             const data = await res.json();
             const tbody = document.getElementById('salesBody');
             tbody.innerHTML = '';
             let total = 0;
             data.forEach(r => {
-               total += Number(r.sum) || 0;
-                const values = [];
-                if ('seller' in r) values.push(r.seller);
-                if ('product' in r) values.push(r.product);
-                if ('quantity' in r) values.push(r.quantity);
-                if ('price' in r) values.push(r.price);
-                if ('sum' in r) values.push(r.sum);
-                if ('time' in r) values.push(new Date(r.time).toLocaleString());
+                total += r.sum;
                 const tr = document.createElement('tr');
-                tr.innerHTML = values.map(v => `<td>${v}</td>`).join('');
+                tr.innerHTML = `
+           
+              <td>${r.seller}</td><td>${r.product}</td><td>${r.quantity}</td>
+              <td>${r.price}</td><td>${r.sum}</td><td>${new Date(r.time).toLocaleString()}</td>
+            `;
                 tbody.appendChild(tr);
             });
             document.getElementById('salesTotal').innerText = `Итого: ${total} ₽`;
@@ -108,8 +126,11 @@
         // Excel-экспорт продаж
         document.getElementById('exportSales').onclick = () => {
             const date = document.getElementById('salesDate').value;
+            const seller = document.getElementById('sellerSelect').value;
             if (!date) return alert('Укажите дату!');
-            window.location.href = '/api/sales-export.xlsx?date=' + date;
+            let url = '/api/sales-export.xlsx?date=' + date;
+            if (seller) url += '&seller_id=' + seller;
+            window.location.href = url;
         };
 
         // Excel-экспорт остатков
@@ -125,6 +146,7 @@
             document.getElementById('salesDate').value = today;
             document.getElementById('invDate').value = today;
             loadProducts();
+            loadSellers();
         });
     </script>
 </body>
