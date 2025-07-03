@@ -83,7 +83,23 @@
                 select.appendChild(opt);
             });
         }
+  let salesTotal = 0;
+        let salesSource;
 
+        function initSalesStream() {
+            salesSource = new EventSource('/api/sales/stream');
+            salesSource.onmessage = e => {
+                const r = JSON.parse(e.data);
+                const selectedDate = document.getElementById('salesDate').value;
+                if (selectedDate && selectedDate !== r.time.slice(0, 10)) return;
+                const tbody = document.getElementById('salesBody');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.seller}</td><td>${r.product}</td><td>${r.quantity}</td><td>${r.price}</td><td>${r.sum}</td><td>${new Date(r.time).toLocaleString()}</td>`;
+                tbody.prepend(tr);
+                salesTotal += r.sum;
+                document.getElementById('salesTotal').innerText = `Итого: ${salesTotal} ₽`;
+            };
+        }
         // Загрузка товаров
         async function loadProducts() {
             const res = await fetch('/api/products', { credentials: 'include' });
@@ -109,9 +125,9 @@
             const data = await res.json();
             const tbody = document.getElementById('salesBody');
             tbody.innerHTML = '';
-            let total = 0;
+             salesTotal = 0;
             data.forEach(r => {
-                total += r.sum;
+             salesTotal += r.sum;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
            
@@ -120,7 +136,7 @@
             `;
                 tbody.appendChild(tr);
             });
-            document.getElementById('salesTotal').innerText = `Итого: ${total} ₽`;
+            document.getElementById('salesTotal').innerText = `Итого: ${salesTotal} ₽`;
         };
 
         // Excel-экспорт продаж
@@ -147,6 +163,7 @@
             document.getElementById('invDate').value = today;
             loadProducts();
             loadSellers();
+             initSalesStream();
         });
     </script>
 </body>
