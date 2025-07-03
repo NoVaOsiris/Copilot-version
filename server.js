@@ -35,6 +35,9 @@ app.use('/api/sellers', require('./routes/sellers')(pool));
 app.use('/api/inventory', require('./routes/inventory')(pool));
 app.use('/api/sales', require('./routes/sales')(pool));
 
+app.get('/', (req, res) => {
+  res.redirect('/login.html');
+});
 // Start server
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
