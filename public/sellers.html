@@ -1,0 +1,48 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Продавцы</title>
+  <script>
+    async function loadSellers() {
+      const res = await fetch('/api/sellers');
+      const data = await res.json();
+      const table = document.getElementById('sellers');
+      table.innerHTML = '';
+      data.forEach(s => {
+        const row = document.createElement('tr');
+        row.innerHTML = \`
+          <td><input value="\${s.name}" onchange="editSeller(\${s.id}, this.value, 'name')"/></td>
+          <td><input value="\${s.role}" onchange="editSeller(\${s.id}, this.value, 'role')"/></td>
+          <td><input type="password" placeholder="Новый пароль" onchange="editSeller(\${s.id}, this.value, 'password')"/></td>
+        \`;
+        table.appendChild(row);
+      });
+    }
+
+    async function editSeller(id, value, field) {
+      const row = [...document.getElementById('sellers').children].find(r => 
+        r.children[0].children[0].onchange.toString().includes(id));
+      const name = row.children[0].children[0].value;
+      const role = row.children[1].children[0].value;
+      const password = row.children[2].children[0].value;
+      await fetch('/api/sellers', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id, name, role, password })
+      });
+      loadSellers();
+    }
+
+    window.onload = loadSellers;
+  </script>
+</head>
+<body>
+  <h1>Продавцы</h1>
+  <table border="1">
+    <thead><tr><th>Имя</th><th>Роль</th><th>Пароль</th></tr></thead>
+    <tbody id="sellers"></tbody>
+  </table>
+</body>
+</html>
