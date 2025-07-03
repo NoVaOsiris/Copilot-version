@@ -35,6 +35,25 @@ app.use('/api/sellers', require('./routes/sellers')(pool));
 app.use('/api/inventory', require('./routes/inventory')(pool));
 app.use('/api/sales', require('./routes/sales')(pool));
 
+app.post('/api/login', async (req, res) => {
+  const { name, password } = req.body;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM sellers WHERE name = $1 AND password = $2',
+      [name, password]
+    );
+    const user = result.rows[0];
+    if (!user) {
+      return res.status(401).json({ error: 'Неверное имя или пароль' });
+    }
+    req.session.user = { id: user.id, name: user.name, role: user.role };
+    res.json({ name: user.name, role: user.role });
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+
 app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
