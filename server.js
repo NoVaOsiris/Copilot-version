@@ -91,11 +91,10 @@ function requireRole(role) {
 // Auth
 app.post('/api/login', async (req, res) => {
     const { name, password } = req.body;
-    try {
-        const { rows } = await pool.query(
-            'SELECT * FROM sellers WHERE name=$1 AND password=$2',
-            [name, password]
-        );
+const { rows } = await pool.query(
+  'SELECT * FROM sellers WHERE name=$1 AND password=$2',
+  [name, password]
+);
         const row = rows[0];
         if (!row) return res.status(401).json({ error: 'Неверные данные' });
         req.session.user = { id: row.id, name: row.name, role: row.role };
