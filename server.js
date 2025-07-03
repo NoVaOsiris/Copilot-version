@@ -10,6 +10,12 @@ const Excel = require('exceljs');
 
 const app = express();
 const PORT = 3000;
+// SSE clients for sales events
+const salesClients = [];
+function sendSaleEvent(data) {
+    const payload = `data: ${JSON.stringify(data)}\n\n`;
+    salesClients.forEach(c => c.res.write(payload));
+}
 
 // DB connection
 const pool = new Pool({
@@ -117,7 +123,21 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/logout', (req, res) => {
     req.session.destroy(() => res.json({ success: true }));
 });
+// Stream of sales events for admin via SSE
+app.get('/api/sales/stream', requireRole('admin'), (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
 
+    const client = { res };
+    salesClients.push(client);
+
+    req.on('close', () => {
+        const idx = salesClients.indexOf(client);
+        if (idx !== -1) salesClients.splice(idx, 1);
+    });
+});
 // Products
 app.get('/api/products', requireRole(), async (req, res) => {
     try {
@@ -169,16 +189,31 @@ app.post('/api/sales', requireRole(), async (req, res) => {
     if (!items || !items.length) return res.status(400).json({ error: 'Нет товаров' });
     const time = new Date().toISOString();
     const client = await pool.connect();
+   const insertedIds = [];
     try {
         await client.query('BEGIN');
         for (const i of items) {
-            await client.query(
-                'INSERT INTO sales (seller_id, product_id, quantity, sale_time) VALUES ($1,$2,$3,$4)',
+            const { rows } = await client.query(
+                'INSERT INTO sales (seller_id, product_id, quantity, sale_time) VALUES ($1,$2,$3,$4) RETURNING id',
                 [req.session.user.id, i.product_id, i.quantity, time]
             );
+            insertedIds.push(rows[0].id);
         }
         await client.query('COMMIT');
         res.json({ success: true });
+      if (insertedIds.length) {
+            const { rows } = await pool.query(
+                `SELECT s.name AS seller, p.name AS product, sa.quantity, p.price,
+                        (p.price * sa.quantity) AS sum,
+                        sa.sale_time AT TIME ZONE 'UTC' AT TIME ZONE 'localtime' AS time
+                 FROM sales sa
+                 JOIN sellers s ON s.id = sa.seller_id
+                 JOIN products p ON p.id = sa.product_id
+                 WHERE sa.id = ANY($1::int[])`,
+                [insertedIds]
+            );
+            rows.forEach(sendSaleEvent);
+        }
     } catch (err) {
         await client.query('ROLLBACK');
         res.status(500).json({ error: 'DB error' });
