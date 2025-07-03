@@ -1,21 +1,19 @@
-
- {
-   "name": "pirozhki-app",
-   "version": "1.0.0",
-   "description": "Система учёта пирожков",
-   "main": "server.js",
-   "scripts": {
-     "start": "node server.js"
-   },
-   "dependencies": {
-     "body-parser": "^1.20.2",
+{
+  "name": "pirozhki-app",
+  "version": "1.0.0",
+  "description": "Система учёта пирожков",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
     "connect-pg-simple": "^10.0.0",
-     "cors": "^2.8.5",
-     "exceljs": "^4.4.0",
-     "express": "^4.18.2",
-     "express-session": "^1.18.1",
-   "sqlite3": "^5.1.6"
-   "pg": "^8.11.5",
+    "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.18.2",
+    "express-session": "^1.18.1",
+    "pg": "^8.11.5",
     "dotenv": "^16.3.1"
-   }
- }
+  }
+}
