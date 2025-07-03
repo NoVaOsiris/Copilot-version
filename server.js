@@ -91,6 +91,8 @@ function requireRole(role) {
 // Auth
 app.post('/api/login', async (req, res) => {
     const { name, password } = req.body;
+    // Avoid logging sensitive password information
+  console.log('Login attempt:', { name });
     try {
         const { rows } = await pool.query(
             'SELECT * FROM sellers WHERE name=$1 AND password=$2',
@@ -280,7 +282,32 @@ app.get('/api/inventory-all.xlsx', requireRole('admin'), async (req, res) => {
         res.status(500).send('DB error');
     }
 });
+// Daily summary
+app.get('/api/daily-summary', requireRole('admin'), async (req, res) => {
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const sql = `
+        SELECT s.name AS seller,
+               COALESCE(SUM(i.opening_balance),0)       AS start_balance,
+               COALESCE(SUM(i.receipt),0)                AS total_in,
+               COALESCE(SUM(sa.quantity),0)              AS total_out,
+               COALESCE(SUM(i.opening_balance),0) +
+               COALESCE(SUM(i.receipt),0) -
+               COALESCE(SUM(sa.quantity),0)               AS net_balance,
+               COALESCE(SUM(i.closing_balance),0)        AS end_balance
+        FROM sellers s
+        LEFT JOIN inventory i ON s.id = i.seller_id AND i.date = $1
+        LEFT JOIN sales sa ON s.id = sa.seller_id AND date(sa.sale_time) = $1
+        WHERE s.role = 'seller'
+        GROUP BY s.name
+        ORDER BY s.name`;
 
+    try {
+        const { rows } = await pool.query(sql, [date]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'DB error' });
+    }
+});
 // Inventory
 app.get('/api/inventory-fill', requireRole(), async (req, res) => {
     const seller_id = req.session.user.id;
@@ -345,23 +372,7 @@ app.post('/api/inventory', requireRole(), async (req, res) => {
         client.release();
     }
 });
-app.post('/api/login', async (req, res) => {
-  const { name, password } = req.body;
-  console.log('Login attempt:', { name, password }); // 👈
-  try {
-    const { rows } = await pool.query(
-      'SELECT * FROM sellers WHERE name=$1 AND password=$2',
-      [name, password]
-    );
-    const row = rows[0];
-    if (!row) return res.status(401).json({ error: 'Неверные данные' });
-    req.session.user = { id: row.id, name: row.name, role: row.role };
-    res.json(req.session.user);
-  } catch (err) {
-    console.error('Login DB error:', err); // 👈
-    res.status(500).json({ error: 'DB error' });
-  }
-});
+
 
 
 // Start server
