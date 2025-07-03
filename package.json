@@ -1,8 +1,4 @@
-diff --git a/package.json b/package.json
-index d2633276281f92957849f5e44b3d17a351cb71dc..d990d70c41c364bed6cc729ed7d16e2c1875e4f0 100644
---- a/package.json
-+++ b/package.json
-@@ -1,18 +1,19 @@
+
  {
    "name": "pirozhki-app",
    "version": "1.0.0",
